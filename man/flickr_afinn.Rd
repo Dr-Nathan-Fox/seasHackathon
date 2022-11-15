@@ -8,9 +8,18 @@ Added a column for the afinn sentiment for each photo}
 flickr_afinn(flickr_data = NULL)
 }
 \arguments{
-\item{flickr_data}{}
+\item{flickr_data}{the flickr data dataframe you wish to add afinn to}
+}
+\value{
+additional column on flickr data
 }
 \description{
 flickr_afinn
 Added a column for the afinn sentiment for each photo
+}
+\examples{
+\dontrun{
+flickr_afinn(flickr_data = flickr_raw)
+}
+
 }

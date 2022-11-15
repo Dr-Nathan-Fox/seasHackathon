@@ -1,12 +1,16 @@
 #' paste2
 #' function to paste without copying NAs
-#' @param ...
-#' @param sep
+#' @param ... what you wish to paste
+#' @param sep how you want them seperated
 #'
-#' @return
+#' @return a pasted versions of what you requested
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' flickr_raw$text <- paste2(flickr_raw$title, flickr_raw$description, flickr_raw$tags)
+#' }
+
 paste2 <- function(...,sep=", ") {
   L <- list(...)
   L <- lapply(L,function(x) {x[is.na(x)] <- ""; x})
@@ -18,12 +22,16 @@ paste2 <- function(...,sep=", ") {
 #' flickr_afinn
 #' Added a column for the afinn sentiment for each photo
 #'
-#' @param flickr_data
+#' @param flickr_data the flickr data dataframe you wish to add afinn to
 #'
-#' @return
+#' @return additional column on flickr data
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' flickr_afinn(flickr_data = flickr_raw)
+#' }
+
 flickr_afinn <- function(flickr_data = NULL){ #data will = your search
 
   afinn <- flickr_data %>%
@@ -43,12 +51,16 @@ flickr_afinn <- function(flickr_data = NULL){ #data will = your search
 #' flikckr_nrc
 #' Added a column for the count each of nrc sentiments for each photo
 #'
-#' @param flickr_data
+#' @param flickr_data the flickr data dataframe you wish to add nrc to
 #'
-#' @return
+#' @return additional column on flickr data
 #' @export
 #'
 #' @examples
+#' \dontrun{
+#' flickr_nrc(flickr_data = flickr_raw)
+#' }
+
 flickr_nrc <- function(flickr_data = NULL){ #data will = your search
 
   nrc <- flickr_data %>%

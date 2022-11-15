@@ -8,9 +8,20 @@ function to paste without copying NAs}
 paste2(..., sep = ", ")
 }
 \arguments{
-\item{sep}{}
+\item{...}{what you wish to paste}
+
+\item{sep}{how you want them seperated}
+}
+\value{
+a pasted versions of what you requested
 }
 \description{
 paste2
 function to paste without copying NAs
+}
+\examples{
+\dontrun{
+flickr_raw$text <- paste2(flickr_raw$title, flickr_raw$description, flickr_raw$tags)
+}
+
 }

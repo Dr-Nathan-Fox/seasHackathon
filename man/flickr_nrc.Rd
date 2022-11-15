@@ -8,9 +8,17 @@ Added a column for the count each of nrc sentiments for each photo}
 flickr_nrc(flickr_data = NULL)
 }
 \arguments{
-\item{flickr_data}{}
+\item{flickr_data}{the flickr data dataframe you wish to add nrc to}
+}
+\value{
+additional column on flickr data
 }
 \description{
 flikckr_nrc
 Added a column for the count each of nrc sentiments for each photo
+}
+\examples{
+\dontrun{
+flickr_nrc(flickr_data = flickr_raw)
+}
 }

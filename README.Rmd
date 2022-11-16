@@ -24,29 +24,164 @@ I am hopeful that the work we do today can inform a peer reviewed paper on envir
 
 ## Installation
 
-You can install and load the code for this hackathon session from [GitHub](https://github.com/nfox29/seasHackathon) with:
+To access code designed for these type of analysis we need to install and library 'R packages'. R packages can be downloaded from several locations. Packages can be officially hosted on the 'CRAN repository', while other packages can be downloaded from sites such as github. The `devtools` package allows for better loading of uninstalled packages hosted on github.
+
+You can install and load the code for this hackathon session from [GitHub](https://github.com/nfox29/seasHackathon) and the tools for searching social media websites with:
 
 ```{r install, eval = FALSE}
-devtools::install_github("nfox29/seasHackathon")
+install.packages("devtools")
+library(devtools)
 
+devtools::install_github("nfox29/seasHackathon")
 library(seasHackathon)
+
+devtools::install_github("ropensci/photosearcher")
+library(photosearcher)
 ```
 
+## Flickr
+Flickr is an image and video hosting service with an estimated 90 million monthly users. This include over 75 million registered photographers. These user upload almost 25 million photograph a day. It was created by Ludicorp in 2004, and has changed ownership several times and has been owned by SmugMug since April 20, 2018. 
 
-## Getting data from Flickr
-The first social media website we will look at is Flickr.
+```{r}
+library(photosearcher)
+```
 
-```{r afinn, eval = TRUE}
+The first time you run any `photosearcher` code it will prompt you to make and enter your unique Flickr API key from the [API website](https://www.flickr.com/services/apps/create/). Entering this into the console will save it as a .sysdata file type that will be then automatically used anytime you run a photosearcher function. If you make a mistake or your key stops working, just delete the .sysdata file and the next time you run a function it will prompt you to enter a new api key.
+
+In the following example we will run a basic search to make sure that everyone is able to run the photosearcher functions correctly. Here, we search for any photograph taken on the 1st week of Janurary 2021 accompanied by any text that says "landscape". The basic search for data from Flickr also involves searching within a specific area known as a [bounding box](http://bboxfinder.com/#0.000000,0.000000,0.000000,0.000000)?. The bounding box is a set of coordinates that represent the bottom left and top right of an area. We can use this as an argument in the photosearcher R package to find all photographs within that box. 
+
+```{r first flickr search, eval = FALSE}
+#search flickr for posts containing the word "nature" in a give place and time
+flickr_raw <- photo_search(mindate_taken = "2021-01-01",
+                           maxdate_taken = "2021-01-07",
+                           bbox = "-134.648443,21.398553,-54.140630,49.925909",
+                           text = "landscape")
+```
+
+The photosearcher R package also allows you to search for an area based on a shape file. In R we are dealing with shape files by reading them in using the `sf` package. Here, we read in a sample shape file called `nc` from the `sf` package. This shape file is made up of 100 different regions. We then use this as an argument in the `photo_search()` function to find all photographs taken within the boundaries of each of the 100 different shapes during the first three months of 2022. You may notice that the outputs have some additional column `within` compared to before. The `within` column represents which of the 100 different boundaries that photograph belongs to.
+
+```{r}
+library("sf")
+
+nc <- st_read(system.file("shape/nc.shp", package="sf"))
+
+flickr_photos <- photo_search(mindate_taken = "2020-01-01",
+                              maxdate_taken = "2022-01-01",
+                              sf_layer = nc,
+                              text = "nature")
+head(flickr_photos, 1)
+```
+
+## Reddit
+
+Reddit may be unfamiliar to you as a social media website. The main home page of Reddit is an accumulation of the most liked and commented posts from a given time period. You can filter and sort by time, or display a feed of what the most recent posts are.
+
+Posts on Reddit are made to specific pages where users can posts about a dedicated topic. This pages are called subreddits. Subreddits exist for a wide range of different topics including [landscape photography](https://www.reddit.com/r/EarthPorn/), [hiking](https://www.reddit.com/r/hiking/). These subreddits have different posting rules, for example some only allows image posts, while others only allow textual posts. Lets take a second to explore Reddit.
+
+First, lets take a look at "r/EarthPorn". Now, don't be fooled by the name EarthPorn is not adult content but a collection of professional quality photographs of landscapes.There is also an armature level equivalent call "r/AmatureEarthPorn".
+
+EarthPorn has strict criteria for what can be posted. Only landscape images acompanied by the title of the images location are allowed. Other subreddits have more relaxed rules and allow posts of all kind, as long as they are on topic.
+
+Though data from Reddit has been used in a wide range of research disciplines such as political sciences, health sciences and technological development, it has not yet been widely explored for environmental sciences. We however believe that there is a great opportunity for a wide range of environmental applications as explored in [this paper](https://www.sciencedirect.com/science/article/pii/S2212041621000899)
+
+As with searching for Flickr photographs, the `photosearcher` package provides functionality to search Reddit for data. Please note that this function has just been developed for public use and has not been as robustly tested as the Flickr search, so if we get some unexpected errors please do not worry! We will also load some other packages that provide some nice functionality for accessing Reddit data.
+
+```{r}
+library("photosearcher")
+library("dplyr")
+```
+
+Lets start by searching for posts associated with a specific term. For example, lets find all the posts associated with the word waterfall. The function is set up similar to the `photo_search()` function so we need to supply a start and end date. As Reddit has a massive database of posts lets quickly search for just one week. Reddit does allow for adult content, or not safe for work posts (NSFW), so to ensure these are removed we can select only posts that are not labeled as `over_18`.
+
+```{r reddit first search, eval = TRUE}
+reddit_data <- reddit_search(search_term = "waterfall",
+                             start_date = "2022-01-01",
+                             end_date = "2022-01-08") %>% 
+  subset(over_18 == "FALSE") #remove over 18 content
+
+#inspect data
+head(reddit_data)[-1] #the -1 is to hide the authors names
+
+#inspect the subreddits the data were posted too
+reddit_data$subreddit
+```
+
+From inspecting the data we can see that quite a lot of these posts were not to subreddits relevant for landscape scale studies. Instead lets check out a specific subreddit of interest: "r/EarthPorn". Lets take a quick look at posts to EarthPorn, by returning all posts there for one day.
+
+```{r reddit second search, eval = FALSE}
+reddit_data <- reddit_search(subreddit = "EarthPorn",
+                             start_date = "2022-01-01",
+                             end_date = "2022-01-02")
+#inspect data
+head(reddit_data)[-1] 
+```
+
+Now posts to this subreddit should all be photographs. One neat thing we can do with this is download the images for further inspection or analysis. In the next line of code everyone will download a random image from the returned data set to have a look at. First, everyone will generate a random number between 1 and the number of images returned. We will then use that number to downloaded the image in that row number.
+
+```{r, eval=FALSE}
+#this code says, generate a random number, between 1, and the maximum number of rows in our data
+number <- sample(1:nrow(reddit_data), 1)
+
+#here we select the URL of the image that we want to download
+file_url <- reddit_data$url[number]
+
+#here we download the file and save it in your current working directory with the name earthporn.jpg
+download.file(file_url, 'earthporn.jpg', mode = 'wb') 
+```
+
+When downloading images, please check back with the original post to ensure you are not infringing on any copyright or privacy policy. To ensure we aren't doing that we can just delete the photograph for now.
+
+```{r, eval=FALSE}
+file.remove('earthporn.jpg')
+```
+
+It is also possible to search for a specific term within a subreddit. Here, I am going to search for images in EarthPorn with the text, "Wales".
+
+```{r, reddit third search, eval = FALSE}
+reddit_data <- reddit_search(search_term = "wales",
+                             subreddit = "EarthPorn",
+                             start_date = "2020-01-01",
+                             end_date = "2022-01-01") 
+#inspect data
+head(reddit_data)[-1] 
+```
+
+## Sentiment dictionaries
+Textual sentiment analysis assess the emotion expressed within a piece of text. This can be a powerful tool in understanding how people feel about the natural environment. As with previous task we need to download and  library the necessary packages to perform these analysis.
+
+The most basic textual sentiment analysis is performed by comparing words to a pre-defined dictionary. These dictionaries have been created by other researchers who manually attributed a value to the sentiment of individual word. Today we will look at three dictionaries AFINN, bing and ncr. 
+
+First, the AFINN dictionary [(Nielsen 2011)](https://arxiv.org/abs/1103.2903) ranks words on a scale of -5 to +5. Words negatively ranked are those with a negative associated sentiment and those with a positive rank are associated with a positive sentiment. While the number represents the magnitude of sentiment (e.g., +5 is more positive than +3).
+
+```{r show afinn, eval = TRUE}
 tidytext::get_sentiments("afinn")
 ```
 
+Second, the bing dictionary [Liu et al. ](https://www.morganclaypool.com/doi/abs/10.2200/s00416ed1v01y201204hlt016?casa_token=zVb-dykzCngAAAAA:joawB4fnvH6TWALFJeKJS8HiQQ07g920cdnjogMvSesova-GyXExeT7wwFkW2C6XjppwyThDHA) ranks word in a binary fashion of either positive of negative.
+
+```{r show bing, eval = TRUE}
+tidytext::get_sentiments("bing")
+```
+
+Third, the nrc dictionary [Mohammad and Turney 2010,](https://arxiv.org/pdf/1308.6297.pdf) categories word into different emotions: positive, negative, anger, anticipation, disgust, fear, joy, sadness, surprise, and trust.
+
+```{r show nrc, eval = TRUE}
+tidytext::get_sentiments("nrc")
+```
+
+You may have noticed, not only do these dictionaries have different methods of measuring sentiment, they also have a different number of categorized words. This makes each dictionary good for different purposes. It has been demonstrated that AFINN is a good dictionary for evaluating social media data, so lets focus on that for now. 
+
+## Finding the sentiment of social media posts
+For the purpose of this demonstration I have scripted some useful functions that quickly let us organize and assess the sentiment of posts from Flickr. The `paste2()` function allows you to easily paste multiple column together without including NAs or missing data, while the `flickr_afinn()` and `flickr_nrc()` functions quickly let you add an additional column(s) to our data frames that summaries the sentiment scores.
+
+If you are interested in seeing how these functions work they are listed under the R folder in the `helpful_functions.R` file.
 
 ```{r afinn_flickr, eval = FALSE}
 #search flickr for posts containing the word "nature" in a give place and time
-flickr_raw <- photo_search(mindate_taken = "2022-01-01",
-                           maxdate_taken = "2021-01-01",
+flickr_raw <- photo_search(mindate_taken = "2021-01-01",
+                           maxdate_taken = "2021-01-07",
                            bbox = "-134.648443,21.398553,-54.140630,49.925909",
-                           text = "nature")
+                           text = "tree")
 
 #here we create a new column called text and paste in all the other text from that row
 flickr_raw$text <- paste2(flickr_raw$title,
@@ -54,5 +189,97 @@ flickr_raw$text <- paste2(flickr_raw$title,
                           flickr_raw$tags)
 
 #use our custom function to add afinn sentiments to the
-flickr_afinn <- get_afinn(flickr_data = flickr_raw)
+flickr_afinn <- flickr_afinn(flickr_data = flickr_raw)
+
+#use our custom function to add nrc sentiments to the
+flickr_nrc <- flickr_nrc(flickr_data = flickr_raw)
 ```
+
+## Making spatial maps
+One of the next things we can do is use the sentiment data to map areas of high and low sentiment. In this basic example we will map a few points labeled as hiking on Flickr in the United Kingdom and map which areas have high and low sentiment. 
+
+```{r make maps, eval = TRUE}
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(photosearcher)
+library(ggplot2)
+library(seasHackathon)
+library(dplyr)
+library(tidytext)
+
+#search flickr for posts containing the word "nature" in a give place and time
+flickr_raw <- photo_search(mindate_taken = "2021-01-01",
+                           maxdate_taken = "2021-01-07",
+                           bbox = "-11.250000,50.035974,1.757813,59.844815",
+                           text = "hiking")
+
+#here we create a new column called text and paste in all the other text from that row
+flickr_raw$text <- paste2(flickr_raw$title,
+                          flickr_raw$description,
+                          flickr_raw$tags)
+
+#use our custom function to add afinn sentiments to the
+flickr_afinn <- flickr_afinn(flickr_data = flickr_raw)
+
+#create a simple base map
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+#plot the data
+ggplot() + 
+  geom_sf(data = world, color = "black", fill = "white") + #plot base map
+  coord_sf(xlim = c(-11.250000,1.757813), ylim = c(50.035974,59.844815), expand = FALSE) + #zoom to bbox
+  geom_point(data = flickr_afinn, aes(x = longitude, y = latitude, color = afinn_sentiment)) #plot points
+```
+
+## Mapping social interactions
+Here we are going to use some functions from the [RedditExtractor](https://github.com/ivan-rivera/RedditExtractor) package. `RedditExtractor` has a function called `get_reddit` which provides similar functionality to the `reddit_search()` we just used from `photosearcher`. The `get_reddit()` function returns data in a slightly different way, which may not be user friendly, however the function has the added ability to specify a minimum number of comments. Using this additional variable we can find posts that have a large number of comments and therefore discussion around landscape or ecological features. Unfortunately, an update to the package got rid of this function so we will have to download an older version to access this feature.  
+
+```{r, eval = FALSE}
+#needed for mac users
+install.packages(c('devtools','curl'),
+                 repos = "http://cran.us.r-project.org") 
+require(devtools)
+install_version("RedditExtractoR", version = "2.1.5", repos = "http://cran.us.r-project.org")
+```
+
+```{r, eval = FALSE}
+library("RedditExtractoR")
+```
+
+Here we use this older code to return posts discussing the grand canyon from EarthPorn with more than 500 comments. Feel free to change this to any search that you are interested in!
+
+```{r, eval = FALSE}
+reddit_content <- get_reddit(
+  search_terms = "Grand Canyon",
+  subreddit = "EarthPorn",
+  cn_threshold = 500
+)
+```
+
+Once we have this data stored we can generate network maps of interactions between users.
+
+```{r, eval = FALSE}
+#large networks take long to generate so here we take the first 200 comments
+reddit_content <- reddit_content[1:200,] 
+#extract the information needed for the plot
+user <- user_network(reddit_content, 
+                     include_author = FALSE, 
+                     agg = TRUE)
+#plot the network
+user$plot
+```
+
+## Over to you
+Now that we have covered the basics, your goal for the day is to come up with an execute a suitable research aim that uses social media text to find and assess environmental attitudes. I have some suggestions of interesting topics below, but the main goal of the day is to have fun and learn new skills, so pick a topic that interests you most.
+
+-Opinions on different animal species?
+
+-Favorite recreational activities?
+
+-Attitude towards the sustainable development goals?
+
+-Preferences for more sustainable food options?
+
+-Discussion on environmental disasters? 
+
+-How different elements of nature makes people feel?

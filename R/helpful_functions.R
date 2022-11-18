@@ -88,3 +88,14 @@ flickr_nrc <- function(flickr_data = NULL){ #data will = your search
   return(out)
 
 }
+
+
+#nrc for reddit
+
+nrc <- reddit_data %>%
+  unnest_tokens(word, selftext) %>%
+  inner_join(get_sentiments("nrc"))
+
+anger <- subset(nrc, sentiment == "anger")
+
+anger_list <- data.frame(table(unlist(anger$word)))
